@@ -45,11 +45,11 @@ const char* mqtt_server = "mqtt.thingsboard.cloud";    //--Ash: ThingsBoard Clou
 //const int mqtt_port = 1883;
 const int mqtt_port = 8883; // secure MQTT with TLS encryption, protect data during transmission
 const char* mqtt_client_id = "smartagri-esp32-01";
-//const char* mqtt_token = "bgkz9azj0b9y58vu3f9z"; // device access token
+const char* mqtt_token = "bgkz9azj0b9y58vu3f9z"; // device access token
 const char* mqtt_topic = "v1/devices/me/telemetry"; //thingsboard topic
 
 WiFiClientSecure espClient; //secure Wifi client that uses TLS encryption
-PubSubClient mqttClient(espClient); //create MQTT cleint to use espClient for communication
+PubSubClient mqttClient(espClient); //create MQTT client to use espClient for communication
 
 //--Ash: root CA Certificate from ThingsBoard Cloud----
 //---Allows ESP32 to trust Thingsboard Cloud Server
