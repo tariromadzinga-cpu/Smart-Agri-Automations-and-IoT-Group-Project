@@ -1,7 +1,7 @@
 #include <WiFiClientSecure.h>
 #include <WiFi.h>
 #include <DHT.h>
-#include <PubSubClient.h>   // MQTT client library — Diya, Phase 4
+#include <PubSubClient.h>   // MQTT client library — 
 #define DHTPIN 15
 #define DHTTYPE DHT22
 DHT dht(DHTPIN, DHTTYPE);
