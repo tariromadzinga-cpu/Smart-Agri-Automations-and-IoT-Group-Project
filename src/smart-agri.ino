@@ -40,7 +40,7 @@ int windowIndex = 0;
 bool droughtDetected = false;
 
 //--Diya: Phase 4 — MQTT setup--
-//--Ash: ThingsBoard Setup
+//--Ash: ThingsBoard Setup & Security
 const char* mqtt_server = "mqtt.thingsboard.cloud";    //--Ash: ThingsBoard Cloud MQTT Broker 
 //const int mqtt_port = 1883;
 const int mqtt_port = 8883; // secure MQTT with TLS encryption, protect data during transmission
@@ -49,9 +49,9 @@ const char* mqtt_token = "bgkz9azj0b9y58vu3f9z"; // device access token
 const char* mqtt_topic = "v1/devices/me/telemetry"; //thingsboard topic
 
 WiFiClientSecure espClient; //secure Wifi client that uses TLS encryption
-PubSubClient mqttClient(espClient); //create MQTT client to use espClient for communication
+PubSubClient mqttClient(espClient); //create MQTT cleint to use espClient for communication
 
-//--Ash: root CA Certificate from ThingsBoard Cloud----
+//--Ash: Security: root CA Certificate from ThingsBoard Cloud----
 //---Allows ESP32 to trust Thingsboard Cloud Server
 const char* root_ca = R"EOF(
 -----BEGIN CERTIFICATE-----
@@ -134,13 +134,13 @@ void setup() {
   //dht.setup(15, DHTesp::DHT22);
   Serial.println("DHT22 sensor initialized.");
 
-  // MQTT — Diya, Phase 4
+  // MQTT - Diya
   espClient.setCACert(root_ca); //tells ESP32 to trust this CA certificate
   mqttClient.setServer(mqtt_server, mqtt_port); //which MQTT to connect to
 }
 
-// Diya: Phase 4 — non-blocking MQTT reconnect (doesn't use delay(), so the
-// 3s sensor loop below never gets held up waiting for the broker)
+//  Non-blocking MQTT reconnect (doesn't use delay(), so the
+// 3s sensor loop below never gets held up waiting for the broker) -Diya
 void connectMQTT() {
   if (mqttClient.connected()) return;
   if (millis() - lastMqttAttempt < MQTT_RETRY_INTERVAL) return;
@@ -159,7 +159,7 @@ void connectMQTT() {
   }
 }
 
-// Diya: Phase 3 — rolling window drought check.
+//  Rolling window drought check - Diya
 // Returns true only once WINDOW_SIZE consecutive readings are all "bad"
 // (high temp + low humidity), instead of tripping on one abnormal reading.
 bool updateDroughtWindow(float temperature, float humidity) {
@@ -181,10 +181,10 @@ bool updateDroughtWindow(float temperature, float humidity) {
 
 void loop() {
   if (mqttClient.connected()){
-      mqttClient.loop(); //Ash --run MQTT background task only when connected
+      mqttClient.loop(); //run MQTT background task only when connected -Ash
   }
 
-  if (WiFi.status() == WL_CONNECTED) { //Ash---Attempt an MQTT reconnect, only if Wifi is connected
+  if (WiFi.status() == WL_CONNECTED) { //Attempt an MQTT reconnect, only if Wifi is connected -Ash
     connectMQTT();
   }
 
@@ -262,7 +262,7 @@ void loop() {
   // If ON, keep on until score drops to 50 or below
 
   else if (currentState == IRRIGATING &&
-            irrigationNeedScore > Irrigation_on_threshold){
+            irrigationNeedScore > Irrigation_off_threshold){
     currentState = IRRIGATING;
   }
 
@@ -351,7 +351,7 @@ switch (currentState) {
       break;
   }
 
-  //-----Diya: Phase 4 — publish everything over MQTT-----
+  //-----Publish everything over MQTT----- -Diya
   // If MQTT is down, everything above still runs — satisfies the
   // "local control continues if MQTT fails" failsafe requirement.
   //-----Diya: Phase 4 — publish everything over MQTT-----
@@ -364,8 +364,8 @@ if (mqttClient.connected()) {
       currentState == DROUGHT_STRESS ? "DROUGHT_STRESS" : "FAILSAFE";
     
 
-    //---Ash: Builds JSON payload for ThingsBoard---
-    char payload[256];  //stores string of 256 characters,store JSON message
+    //---Build JSON payload for ThingsBoard--- -Ash
+    char payload[256];  //stores string of 256 characters, store JSON message
     snprintf(payload, sizeof(payload), //build JSON string
     "{\"temperature\":%.1f,\"humidity\":%.1f,\"light\":%d," //JSON field
     "\"score\":%.1f,\"state\":\"%s\",\"drought\":%s}",
