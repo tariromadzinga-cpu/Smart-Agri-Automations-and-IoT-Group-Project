@@ -1,7 +1,7 @@
 #include <WiFiClientSecure.h>
 #include <WiFi.h>
 #include <DHT.h>
-#include <PubSubClient.h>   // MQTT client library 
+#include <PubSubClient.h>   // MQTT client library -Diya
 #define DHTPIN 15
 #define DHTTYPE DHT22
 DHT dht(DHTPIN, DHTTYPE);
@@ -39,8 +39,8 @@ bool droughtWindow[WINDOW_SIZE] = {false, false, false, false};
 int windowIndex = 0;
 bool droughtDetected = false;
 
-//-- MQTT setup--
-//--ThingsBoard Setup & Security--
+//-- MQTT setup--  Diya
+//--ThingsBoard Setup & Security-- Ash
 const char* mqtt_server = "mqtt.thingsboard.cloud";    //ThingsBoard Cloud MQTT Broker 
 //const int mqtt_port = 1883;
 const int mqtt_port = 8883; // secure MQTT with TLS encryption, protect data during transmission
@@ -51,7 +51,7 @@ const char* mqtt_topic = "v1/devices/me/telemetry"; //thingsboard topic
 WiFiClientSecure espClient; //secure Wifi client that uses TLS encryption
 PubSubClient mqttClient(espClient); //create MQTT client to use espClient for communication
 
-//-- Security: root CA Certificate from ThingsBoard Cloud----
+//-- Security: root CA Certificate from ThingsBoard Cloud---- -Ash
 //---Allows ESP32 to trust Thingsboard Cloud Server
 const char* root_ca = R"EOF(
 -----BEGIN CERTIFICATE-----
@@ -139,7 +139,7 @@ void setup() {
   mqttClient.setServer(mqtt_server, mqtt_port); //which MQTT to connect to
 }
 
-// --non-blocking MQTT reconnect (doesn't use delay(), so the
+// --non-blocking MQTT reconnect (doesn't use delay(), so the -Diya
 // 3s sensor loop below never gets held up waiting for the broker)
 void connectMQTT() {
   if (mqttClient.connected()) return;
@@ -159,7 +159,7 @@ void connectMQTT() {
   }
 }
 
-// rolling window drought check.
+// rolling window drought check. -Diya
 // Returns true only once WINDOW_SIZE consecutive readings are all "bad"
 // (high temp + low humidity), instead of tripping on one abnormal reading.
 bool updateDroughtWindow(float temperature, float humidity) {
@@ -188,13 +188,13 @@ void loop() {
     connectMQTT();
   }
 
-  //-----DHT Sensors----
+  //-----DHT Sensors---- -Tari
   //TempAndHumidity data = dht.getTempAndHumidity();
   float humidity = dht.readHumidity();       
   float temperature = dht.readTemperature(); 
   int lightValue = analogRead(LDR_PIN);
 
-  //-----Failsafe Rule-----
+  //-----Failsafe Rule----- -Tari
   if (isnan(humidity) || isnan(temperature)) {
     Serial.println("FAILSAFE: DHT22 Sensor error!");
     digitalWrite(RELAY_PIN, LOW);
@@ -213,7 +213,7 @@ void loop() {
   Serial.print(" °C | Humidity: "); Serial.print(humidity);
   Serial.print(" % | Light: "); Serial.println(lightValue);
 
-  //-----Irrigation Need Score (for Edge AI later)-----
+  //-----Irrigation Need Score (for Edge AI later)----- -Tari
   float humidityStress = (100 - humidity) / 100.0;
   float tempStress = (temperature - 25) / 25.0;
   float lightFactor = lightValue / 4095.0;
@@ -236,7 +236,7 @@ void loop() {
   Serial.print("Irrigation Need Score: ");
   Serial.println(irrigationNeedScore);
 
-  //-----rolling-window drought check-----
+  //-----rolling-window drought check----- -Diya
   droughtDetected = updateDroughtWindow(temperature, humidity);
 
   // ------------------STATE TRANSITIONS----------------
@@ -249,7 +249,7 @@ void loop() {
     }
 
   
-  // ----------IRRIGATION HYSTERESIS------------------
+  // ----------IRRIGATION HYSTERESIS------------------ -Tari
 
   //If OFF, only turn on when score reaches 60
 
@@ -280,7 +280,7 @@ void loop() {
     currentState = MONITORING;
   }
 
-  //---------------DEFAULT STATE--------------
+  //---------------DEFAULT STATE-------------- -Tari
 
   else{
     currentState = IDLE;
@@ -351,7 +351,7 @@ switch (currentState) {
       break;
   }
 
-  //----- publish everything over MQTT-----
+  //----- publish everything over MQTT----- -Diya
   // If MQTT is down, everything above still runs — satisfies the
   // "local control continues if MQTT fails" failsafe requirement.
   //----- publish everything over MQTT-----
@@ -364,7 +364,7 @@ if (mqttClient.connected()) {
       currentState == DROUGHT_STRESS ? "DROUGHT_STRESS" : "FAILSAFE";
     
 
-    //--- Build JSON payload for ThingsBoard---
+    //--- Build JSON payload for ThingsBoard--- -Ash
     char payload[256];  //stores string of 256 characters,store JSON message
     snprintf(payload, sizeof(payload), //build JSON string
     "{\"temperature\":%.1f,\"humidity\":%.1f,\"light\":%d," //JSON field
